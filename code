@@ -1,0 +1,53 @@
+<script type='text/javascript'>
+  //<![CDATA[
+  function checkVisitor() {
+    const ipifyApiKey = 'at_9y23ke4Itv2lXbdY5zWhfocgFE01r';
+    const proxyCheckApiKey = '7w48yx-406284-067674-wi3016';
+
+    fetch('https://api.ipify.org?format=json')
+      .then(response => response.json())
+      .then(data => {
+        const visitorIP = data.ip;
+        const ipifyApiUrl = `https://geo.ipify.org/api/v2/country,city?apiKey=${ipifyApiKey}&ipAddress=${visitorIP}`;
+        const proxyCheckApiUrl = `https://proxycheck.io/v2/${visitorIP}?key=${proxyCheckApiKey}&vpn=1&asn=1`;
+
+        return Promise.all([
+          fetch(ipifyApiUrl),
+          fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(proxyCheckApiUrl)}`)
+        ]);
+      })
+      .then(responses => Promise.all(responses.map(response => response.json())))
+      .then(data => {
+        const locationData = data[0];
+        const proxyData = JSON.parse(data[1].contents);
+
+        const visitorIP = Object.keys(proxyData)[1];
+        const isUsingVPN = proxyData[visitorIP].vpn === 'yes';
+        const isUsingProxy = proxyData[visitorIP].proxy === 'yes';
+        const isOutsideUSA = locationData.location.country !== 'US';
+
+        console.log('Visitor IP:', visitorIP);
+        console.log('Using VPN:', isUsingVPN);
+        console.log('Using Proxy:', isUsingProxy);
+        console.log('Outside USA:', isOutsideUSA);
+
+        if (isUsingVPN || isUsingProxy || isOutsideUSA) {
+          redirectToBlockedPage();
+        }
+      })
+      .catch(error => {
+        console.error('Error al realizar las solicitudes a las API:', error);
+      });
+  }
+
+  function redirectToBlockedPage() {
+    window.location.replace('https://www.rituales.lat/2024/04/error-503-service-unavailable.html');
+  }
+
+  const currentURL = window.location.href;
+  if (currentURL !== 'https://www.rituales.lat/2024/04/error-503-service-unavailable.html') {
+    checkVisitor();
+  }
+
+  //]]>
+</script>
